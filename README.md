@@ -1,25 +1,20 @@
-# Anime Age Recognition
+<div align="center">
+<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
+</div>
 
-這是一個以 `React + Vite + Express` 製作的角色圖片分析 Demo。
-使用者可以上傳圖片，後端會把圖片送到 Gemini，回傳角色名稱、外觀年齡、視覺特徵與角色卡資訊。
+# Run and deploy your AI Studio app
 
-## 本機執行
+This contains everything you need to run your app locally.
 
-需求：
+View your app in AI Studio: https://ai.studio/apps/a9bc415f-b39c-4640-9a32-9aaa316f36d9
 
-- Node.js 20+
+## Run Locally
 
-步驟：
+**Prerequisites:**  Node.js
 
-1. 安裝依賴：`npm install`
-2. 建立 `.env.local`，並設定 `GEMINI_API_KEY`
-3. 啟動開發環境：`npm run dev`
-4. 開啟 `http://localhost:3000`
 
-## 可用指令
-
-- `npm run dev`：啟動 Express 與 Vite 開發伺服器
-- `npm run build`：建置前端並打包後端
-- `npm run start`：執行建置後的伺服器
-- `npm run lint`：執行 TypeScript 型別檢查
-- `npm run clean`：刪除 `dist`
+1. Install dependencies:
+   `npm install`
+2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+3. Run the app:
+   `npm run dev`
