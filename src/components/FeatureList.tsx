@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Eye, Shirt, Calendar, CheckSquare, Sparkles, Feather, Compass } from "lucide-react";
+import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts';
 import { AnimeAnalysis } from "../types";
 
 interface FeatureListProps {
@@ -7,8 +8,17 @@ interface FeatureListProps {
 }
 
 export function FeatureList({ analysis }: FeatureListProps) {
-  const { visualEvidence, features, personalityVibe, animeArchetype, estimatedAgeGroup } = analysis;
-  const [activeTab, setActiveTab] = useState<"features" | "evidence">("features");
+  const { visualEvidence, features, personalityVibe, animeArchetype, estimatedAgeGroup, confidenceScore } = analysis;
+  const [activeTab, setActiveTab] = useState<"features" | "evidence" | "radar">("features");
+
+  // Simulated ability scores based on archetype/vibe
+  const abilityData = [
+    { subject: '可愛', A: Math.min(100, Math.max(20, confidenceScore + 5)), fullMark: 100 },
+    { subject: '戰鬥力', A: Math.min(100, Math.max(20, confidenceScore - 10)), fullMark: 100 },
+    { subject: '智慧', A: Math.min(100, Math.max(20, confidenceScore)), fullMark: 100 },
+    { subject: '神秘感', A: Math.min(100, Math.max(20, confidenceScore - 20)), fullMark: 100 },
+    { subject: '親和力', A: Math.min(100, Math.max(20, confidenceScore + 10)), fullMark: 100 },
+  ];
 
   const featureSpecs = [
     {
@@ -47,7 +57,7 @@ export function FeatureList({ analysis }: FeatureListProps) {
     <div className="w-full bg-slate-900/40 border border-slate-800/80 rounded-3xl p-6 glass-panel backdrop-blur-md text-slate-100 shadow-xl">
       
       {/* Tab Selectors */}
-      <div className="flex border-b border-slate-800 pb-3 mb-6 gap-2">
+      <div className="flex border-b border-slate-800 pb-3 mb-6 gap-2 overflow-x-auto">
         <button
           onClick={() => setActiveTab("features")}
           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-display font-medium transition-all ${
@@ -57,7 +67,7 @@ export function FeatureList({ analysis }: FeatureListProps) {
           }`}
         >
           <Compass size={14} />
-          二次元特徵深度解析
+          二次元特徵
         </button>
         <button
           onClick={() => setActiveTab("evidence")}
@@ -68,15 +78,24 @@ export function FeatureList({ analysis }: FeatureListProps) {
           }`}
         >
           <Calendar size={14} />
-          年齡判定佐證線索
+          年齡判定
+        </button>
+        <button
+          onClick={() => setActiveTab("radar")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-display font-medium transition-all ${
+            activeTab === "radar"
+              ? "bg-slate-800 text-pink-400 border border-slate-705 shadow-inner"
+              : "text-slate-400 hover:text-slate-200"
+          }`}
+        >
+          <Sparkles size={14} />
+          能力數值
         </button>
       </div>
 
       {activeTab === "features" ? (
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            
-            {/* Visual Specs items */}
             <div className="space-y-3.5 col-span-1">
               <h4 className="text-[10px] text-slate-500 uppercase tracking-widest font-mono font-bold">
                 Visual Specifications / 外觀規格
@@ -103,10 +122,7 @@ export function FeatureList({ analysis }: FeatureListProps) {
               </div>
             </div>
 
-            {/* Role Personality & Style Class */}
             <div className="space-y-4 col-span-1">
-              
-              {/* Archetype Card */}
               <div className="p-4 bg-gradient-to-br from-indigo-950/40 to-slate-900/40 border border-indigo-500/25 rounded-2xl">
                 <span className="text-[9px] text-indigo-300 font-mono uppercase tracking-wider block">
                   Character Class Prototype / 角設定位
@@ -119,7 +135,6 @@ export function FeatureList({ analysis }: FeatureListProps) {
                 </p>
               </div>
 
-              {/* Personality Detail */}
               <div className="p-4 bg-gradient-to-br from-pink-950/40 to-slate-900/40 border border-pink-500/20 rounded-2xl">
                 <span className="text-[9px] text-pink-300 font-mono uppercase tracking-wider block">
                   Moé Attribute / 二次元性格
@@ -131,11 +146,10 @@ export function FeatureList({ analysis }: FeatureListProps) {
                   {personalityVibe.description}
                 </p>
               </div>
-
             </div>
           </div>
         </div>
-      ) : (
+      ) : activeTab === "evidence" ? (
         <div className="space-y-4">
           <h4 className="text-[10px] text-slate-500 uppercase tracking-widest font-mono font-bold">
             Deep Learning Vision Evidence / 深度視覺依據
@@ -156,10 +170,23 @@ export function FeatureList({ analysis }: FeatureListProps) {
               </div>
             ))}
           </div>
-
-          <div className="p-4 bg-slate-800/20 border border-dashed border-slate-800 rounded-2xl text-[11px] text-slate-400 leading-normal">
-            💡 <strong>分析小常識：</strong>動漫插畫的年齡估算主要依賴<strong>「眼部與面部垂直比例」</strong>。一般大眼睛且位置偏向臉部下方（低重心）表示幼態/兒童；而細長眼神、高挺鼻樑及尖銳下顎輪廓，則通常象徵著青年或成熟角色。此外，領結、水手裝、魔法斗篷等服飾也屬於高權重的二次元年齡辨識特徵。
-          </div>
+        </div>
+      ) : (
+        <div className="h-64">
+           <ResponsiveContainer width="100%" height="100%">
+            <RadarChart cx="50%" cy="50%" outerRadius="80%" data={abilityData}>
+              <PolarGrid stroke="#334155" />
+              <PolarAngleAxis dataKey="subject" tick={{ fill: '#94a3b8', fontSize: 12 }} />
+              <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+              <Radar
+                name="Character Ability"
+                dataKey="A"
+                stroke="#ec4899"
+                fill="#ec4899"
+                fillOpacity={0.6}
+              />
+            </RadarChart>
+          </ResponsiveContainer>
         </div>
       )}
 

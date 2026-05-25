@@ -12,12 +12,16 @@ import {
   User,
   Info,
   Key,
-  X
+  X,
+  History
 } from "lucide-react";
-import { AnimeAnalysis } from "./types";
+import { AnimeAnalysis, HistoryItem } from "./types";
 import { SAMPLE_CHARACTERS, SampleCharacter } from "./samples";
 import { AnimeCard } from "./components/AnimeCard";
 import { FeatureList } from "./components/FeatureList";
+import { HistoryList } from "./components/HistoryList";
+import { CompareView } from "./components/CompareView";
+import { SimilarCharacters } from "./components/SimilarCharacters";
 
 export default function App() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -28,6 +32,16 @@ export default function App() {
   const [analysisResult, setAnalysisResult] = useState<AnimeAnalysis | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
+  const [history, setHistory] = useState<HistoryItem[]>(() => {
+    const saved = localStorage.getItem("anime_analysis_history");
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [selectedForCompare, setSelectedForCompare] = useState<HistoryItem[]>([]);
+  const [showComparison, setShowComparison] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem("anime_analysis_history", JSON.stringify(history));
+  }, [history]);
 
   // User Custom API Key Setup
   const [userApiKey, setUserApiKey] = useState(() => {
@@ -129,6 +143,18 @@ export default function App() {
     }
   };
 
+  const toggleCompare = (item: HistoryItem) => {
+    setSelectedForCompare(prev => {
+      const isSelected = prev.some(s => s.id === item.id);
+      if (isSelected) {
+        return prev.filter(s => s.id !== item.id);
+      } else if (prev.length < 2) {
+        return [...prev, item];
+      }
+      return prev;
+    });
+  };
+
   // Trigger real API analysis on the backend
   const triggerLiveAnalysis = async () => {
     if (!selectedImage || !mimeType) {
@@ -165,6 +191,17 @@ export default function App() {
 
       const result: AnimeAnalysis = await response.json();
       setAnalysisResult(result);
+      
+      // Add to history
+      const newHistoryItem: HistoryItem = {
+        id: Date.now().toString(),
+        timestamp: Date.now(),
+        imageUrl: selectedImage,
+        mimeType: mimeType,
+        analysis: result
+      };
+      setHistory(prev => [newHistoryItem, ...prev].slice(0, 5));
+
     } catch (err: any) {
       console.error(err);
       setError(err.message || "二次元角色年齡鑑定程序發生底層異常，請確認 API 密鑰狀態。");
@@ -355,6 +392,30 @@ export default function App() {
                 </div>
               </div>
 
+              {/* History List */}
+              <div className="mt-6 pt-5 border-t border-slate-800/80">
+                <HistoryList 
+                  history={history} 
+                  onSelect={(item) => {
+                    setSelectedImage(item.imageUrl);
+                    setMimeType(item.mimeType);
+                    setAnalysisResult(item.analysis);
+                    setActivePreset(null);
+                    setShowComparison(false);
+                  }}
+                  selectedForCompare={selectedForCompare}
+                  onToggleCompare={toggleCompare}
+                />
+                {selectedForCompare.length === 2 && (
+                  <button 
+                    onClick={() => setShowComparison(true)}
+                    className="w-full mt-4 p-3 bg-pink-600 text-white rounded-xl font-bold text-sm"
+                  >
+                    開始比較這兩個項目 ({selectedForCompare.length}/2)
+                  </button>
+                )}
+              </div>
+
               {/* Action scanner button */}
               {selectedImage && !activePreset && (
                 <div className="mt-5">
@@ -394,7 +455,13 @@ export default function App() {
 
           {/* Right Column: Dynamic Terminal / Result Canvas (7 Cols) */}
           <div className="lg:col-span-7">
-            {isScanning ? (
+            {showComparison && selectedForCompare.length === 2 ? (
+              <CompareView 
+                item1={{ name: selectedForCompare[0].analysis.characterName, analysis: selectedForCompare[0].analysis, imageUrl: selectedForCompare[0].imageUrl }}
+                item2={{ name: selectedForCompare[1].analysis.characterName, analysis: selectedForCompare[1].analysis, imageUrl: selectedForCompare[1].imageUrl }}
+                onClose={() => setShowComparison(false)}
+              />
+            ) : isScanning ? (
               <div className="bg-slate-950/50 border border-slate-800 rounded-3xl p-10 flex flex-col items-center justify-center text-center aspect-[4/3] min-h-[400px]">
                 
                 {/* scanning screen overlay with futuristic look */}
@@ -458,6 +525,20 @@ export default function App() {
                   {/* Column 2: Detailed Feature specifications tabs (7 Cols) */}
                   <div className="md:col-span-7">
                     <FeatureList analysis={analysisResult} />
+                    <SimilarCharacters 
+                      currentAnalysis={analysisResult}
+                      candidates={[
+                        ...SAMPLE_CHARACTERS.map(c => ({ name: c.name, imageUrl: c.imageUrl, analysis: c.analysis })),
+                        ...history.map(h => ({ name: h.analysis.characterName, imageUrl: h.imageUrl, analysis: h.analysis }))
+                      ]}
+                      onSelect={(item) => {
+                        setSelectedImage(item.imageUrl);
+                        setMimeType("image/jpeg");
+                        setAnalysisResult(item.analysis);
+                        setActivePreset(null);
+                        setShowComparison(false);
+                      }}
+                    />
                   </div>
 
                 </div>

@@ -25,3 +25,11 @@ export interface SampleCharacter {
   imageUrl: string;
   source: string;
 }
+
+export interface HistoryItem {
+  id: string;
+  timestamp: number;
+  imageUrl: string;
+  mimeType: string;
+  analysis: AnimeAnalysis;
+}
