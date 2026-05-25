@@ -10,7 +10,9 @@ import {
   ShieldAlert,
   Dna,
   User,
-  Info
+  Info,
+  Key,
+  X
 } from "lucide-react";
 import { AnimeAnalysis } from "./types";
 import { SAMPLE_CHARACTERS, SampleCharacter } from "./samples";
@@ -26,6 +28,19 @@ export default function App() {
   const [analysisResult, setAnalysisResult] = useState<AnimeAnalysis | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
+
+  // User Custom API Key Setup
+  const [userApiKey, setUserApiKey] = useState(() => {
+    return localStorage.getItem("user_gemini_api_key") || "";
+  });
+  const [showKeyModal, setShowKeyModal] = useState(false);
+  const [tempKey, setTempKey] = useState(userApiKey);
+
+  useEffect(() => {
+    if (showKeyModal) {
+      setTempKey(userApiKey);
+    }
+  }, [showKeyModal, userApiKey]);
 
   const scanMessages = [
     "⚙️ [ANIME-CORE] 裝載深度神經網絡視覺模型...",
@@ -126,11 +141,17 @@ export default function App() {
     setAnalysisResult(null);
 
     try {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json"
+      };
+      
+      if (userApiKey) {
+        headers["X-Gemini-API-Key"] = userApiKey;
+      }
+
       const response = await fetch("/api/analyze", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: headers,
         body: JSON.stringify({
           image: selectedImage,
           mimeType: mimeType
@@ -178,11 +199,25 @@ export default function App() {
             </div>
           </div>
           
-          <div className="hidden sm:flex items-center gap-2 text-xs text-slate-400 font-mono">
-            <span className="px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700/60 text-[10px] text-emerald-400 font-bold">
-              ● API Online
-            </span>
-            <span className="text-slate-500">v1.2.5-Stable</span>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowKeyModal(true)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                userApiKey 
+                  ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 hover:bg-emerald-500/20" 
+                  : "bg-slate-800 text-slate-300 border border-slate-700 hover:text-white hover:bg-slate-705"
+              }`}
+            >
+              <Key size={13} className={userApiKey ? "text-emerald-400 animate-pulse" : "text-slate-400"} />
+              <span>{userApiKey ? "已啟用個人金鑰" : "輸入 API 金鑰"}</span>
+            </button>
+
+            <div className="hidden sm:flex items-center gap-2 text-xs text-slate-400 font-mono">
+              <span className="px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700/60 text-[10px] text-emerald-400 font-bold">
+                ● API Online
+              </span>
+              <span className="text-slate-500">v1.2.5-Stable</span>
+            </div>
           </div>
         </header>
 
@@ -480,6 +515,82 @@ export default function App() {
         </footer>
 
       </div>
+
+      {/* Glassmorphic Gemini API Key Setup Modal */}
+      {showKeyModal && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl relative">
+            <button
+              onClick={() => setShowKeyModal(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
+            >
+              <X size={18} />
+            </button>
+
+            <div className="flex items-center gap-2.5 mb-4">
+              <div className="bg-pink-500/10 p-2 rounded-xl text-pink-400">
+                <Key size={18} />
+              </div>
+              <h3 className="text-base font-bold text-white font-display">Gemini API 金鑰設定</h3>
+            </div>
+
+            <p className="text-xs text-slate-400 leading-relaxed mb-4 font-sans">
+              您可以填寫您的個人 <strong>Gemini API 金鑰 (API Key)</strong> 進行本次動漫識別。
+              金鑰僅安全儲存在您本機瀏覽器的 LocalStorage 中，每次分析時才會用作代理解析。
+            </p>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-[10px] text-slate-500 font-mono font-bold uppercase mb-1.5">
+                  GEMINI API KEY
+                </label>
+                <input
+                  type="password"
+                  placeholder="AIzaSy..."
+                  value={tempKey}
+                  onChange={(e) => setTempKey(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 placeholder:text-slate-700 outline-none focus:border-pink-500/50 transition-colors font-mono"
+                />
+              </div>
+
+              <div className="flex gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    localStorage.setItem("user_gemini_api_key", tempKey.trim());
+                    setUserApiKey(tempKey.trim());
+                    setShowKeyModal(false);
+                    setError(null);
+                  }}
+                  className="flex-1 py-2.5 px-4 bg-gradient-to-r from-pink-500 to-purple-600 rounded-xl text-xs font-semibold text-white hover:opacity-90 cursor-pointer text-center"
+                >
+                  儲存金鑰 Settings
+                </button>
+                {userApiKey && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      localStorage.removeItem("user_gemini_api_key");
+                      setUserApiKey("");
+                      setTempKey("");
+                      setShowKeyModal(false);
+                    }}
+                    className="py-2.5 px-4 bg-slate-800 hover:bg-rose-950 border border-slate-700 hover:border-rose-900 rounded-xl text-xs font-semibold text-rose-300 hover:text-rose-100 cursor-pointer"
+                  >
+                    清除金鑰
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-4 pt-3 border-t border-slate-850 text-[10px] text-slate-500 flex items-center gap-1.5">
+              <Info size={11} className="text-pink-400 flex-shrink-0" />
+              <span>本站預設配有共享安全金鑰，若不輸入亦可直接嘗試進行分析唷！</span>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
