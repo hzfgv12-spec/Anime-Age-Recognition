@@ -17,6 +17,7 @@ app.post("/api/analyze", async (req, res) => {
     const { image, mimeType } = req.body as {
       image?: string;
       mimeType?: string;
+      apiKey?: string;
     };
 
     if (!image || !mimeType) {
@@ -25,10 +26,10 @@ app.post("/api/analyze", async (req, res) => {
       });
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = req.body.apiKey?.trim() || process.env.GEMINI_API_KEY;
     if (!apiKey) {
       return res.status(500).json({
-        error: "Missing GEMINI_API_KEY. Set it in your environment or .env.local.",
+        error: "Missing API key. Enter one in the UI or set GEMINI_API_KEY in the server environment.",
       });
     }
 
